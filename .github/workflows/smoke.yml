@@ -9,17 +9,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Guard (URL 미설정 시 스킵)
-        id: guard
+      - name: Guard (URL 미설정 시 실패)
         run: |
+          # 정기 스모크가 설정 누락으로 '조용히 통과'하면 장애를 놓친다.
+          # 따라서 URL 이 없으면 스킵이 아니라 '실패'시켜 설정 누락을 드러낸다.
           if [ -z "${{ vars.LOADTEST_BASE_URL }}" ]; then
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "vars.LOADTEST_BASE_URL 미설정 — 스킵합니다. (Settings→Variables 에 추가)"
-          else
-            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "::error::vars.LOADTEST_BASE_URL 미설정 — 스모크를 수행할 수 없습니다. (Settings→Variables 에 추가)"
+            exit 1
           fi
       - name: Run k6 smoke
-        if: steps.guard.outputs.run == 'true'
         uses: grafana/k6-action@v0.3.1
         with:
           filename: loadtest/k6-smoke.js
